@@ -1,9 +1,10 @@
 #include "client.h"
 #include "soapH.h"
-#include "sayhello.nsmap"
-
+#include "service.nsmap"
 #include <stdio.h>
 #include <stdlib.h>
+
+#define SOAP_ENDPOINT "http://localhost:8080"
 
 void client_call_hello(const char *name)
 {
@@ -12,10 +13,9 @@ void client_call_hello(const char *name)
 
     char *result = NULL;
 
-    // Call generated SOAP function
     if (soap_call_ns__hello(
             &soap,
-            "http://localhost:8080",
+            SOAP_ENDPOINT,
             NULL,
             (char*)name,
             &result) == SOAP_OK)

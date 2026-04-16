@@ -1,26 +1,28 @@
-
 configure:
-    conan install . --output-folder=build --build=missing
-    source build/build/Release/generators/conanbuild.sh && cmake --preset conan-release
-    ln -sf build/build/Release/compile_commands.json ./compile_commands.json
+    conan install . --output-folder=. --build=missing
+    cmake --preset conan-release
+    ln -sf build/Release/compile_commands.json ./compile_commands.json
 
 build:
-	source build/build/Release/generators/conanbuild.sh && cmake --build --preset conan-release
+    cmake --build build/Release
 
 cbuild:
-	rm -rf build generated
-	mkdir generated
-	just configure
-	just build
+    just clear
+    mkdir generated
+    just configure
+    just build
+
+clear:
+    rm -rf logs build generated
 
 server:
-	./build/build/Release/server
+    ./build/Release/server
 
 client:
-	./build/build/Release/client
+    ./build/Release/client
 
 dev-server:
-    just cbulid
+    just cbuild
     just server
 
 dev-client:

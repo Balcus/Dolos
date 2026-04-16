@@ -17,7 +17,7 @@ find_library(GSOAP_C_LIB
     REQUIRED
 )
 
-set(SERVICE ${CMAKE_CURRENT_SOURCE_DIR}/services/sayhello.h)
+set(SERVICE ${CMAKE_CURRENT_SOURCE_DIR}/services/service.h)
 set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
 file(MAKE_DIRECTORY ${GEN_DIR})
@@ -29,7 +29,7 @@ add_custom_command(
         ${GEN_DIR}/soapClient.c
         ${GEN_DIR}/soapStub.h
         ${GEN_DIR}/soapH.h
-        ${GEN_DIR}/sayhello.nsmap
+        ${GEN_DIR}/service.nsmap
     COMMAND ${GSOAP_CPP2} -c -d ${GEN_DIR} ${SERVICE}
     DEPENDS ${SERVICE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
