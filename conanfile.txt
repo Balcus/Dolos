@@ -1,0 +1,13 @@
+[requires]
+gsoap/2.8.139
+argtable2/2.13
+
+[tool_requires]
+gsoap/2.8.139
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout
