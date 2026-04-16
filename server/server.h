@@ -1,7 +1,12 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-// Starts the SOAP server on the given port
+#include <pthread.h>
+
 void start_server(int port);
+
+// logging
+void logger_init();
+void logger_log(const char *msg);
 
 #endif

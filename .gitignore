@@ -65,3 +65,4 @@ compile_commands.json
 RECV.log
 SENT.log
 TEST.log
+/logs
