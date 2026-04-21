@@ -1,12 +1,16 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <pthread.h>
+#include <libconfig.h>
 
-void start_server(int port);
+typedef struct {
+  int port;
+  char log_dir[256];
+} ServerConfig;
 
-// logging
-void logger_init();
+void config_load(const char *path, ServerConfig *cfg);
+void start_server(int port, const char *log_dir);
+void logger_init(const char *log_dir);
 void logger_log(const char *msg);
 
 #endif
