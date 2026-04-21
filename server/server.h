@@ -13,4 +13,8 @@ void start_server(int port, const char *log_dir);
 void logger_init(const char *log_dir);
 void logger_log(const char *msg);
 
+// logging
+void logger_init();
+void logger_log(const char *msg);
+
 #endif
