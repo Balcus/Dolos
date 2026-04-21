@@ -21,7 +21,7 @@ void config_load(const char *path, ServerConfig *cfg) {
   strcpy(cfg->log_dir, "logs");
 
   if (!config_read_file(&lib_cfg, path)) {
-    fprintf(stderr, "[CONFIG] %s:%d - %s, using defaults\n",
+    fprintf(stderr, "Eroare la configurare %s:%d - %s, folosim valorile default\n",
             config_error_file(&lib_cfg), config_error_line(&lib_cfg),
             config_error_text(&lib_cfg));
     config_destroy(&lib_cfg);
@@ -41,7 +41,7 @@ void config_load(const char *path, ServerConfig *cfg) {
 
 int ns__hello(struct soap *soap, char *name, char **result) {
   char buf[BUFFER_SIZE];
-  snprintf(buf, sizeof(buf), "ns__hello service called");
+  snprintf(buf, sizeof(buf), "ns__hello serviciu apelat");
   logger_log(buf);
 
   // test libstemmer
@@ -55,7 +55,7 @@ int ns__hello(struct soap *soap, char *name, char **result) {
 int ns__register(struct soap *soap, char *username, char *password,
                  int *result) {
   char buf[BUFFER_SIZE];
-  snprintf(buf, sizeof(buf), "Registered user: %s", username);
+  snprintf(buf, sizeof(buf), "User inregistrat: %s", username);
   logger_log(buf);
   *result = 0;
   return SOAP_OK;
@@ -63,7 +63,7 @@ int ns__register(struct soap *soap, char *username, char *password,
 
 int ns__login(struct soap *soap, char *username, char *password, char **token) {
   char buf[BUFFER_SIZE];
-  snprintf(buf, sizeof(buf), "Logged in user: %s", username);
+  snprintf(buf, sizeof(buf), "User logat %s", username);
   logger_log(buf);
   *token = soap_malloc(soap, BUFFER_SIZE);
   strcpy(*token, "token");
@@ -134,8 +134,8 @@ void start_server(int port, const char *log_dir) {
     return;
   }
 
-  printf("Running server on port %d...\n", port);
-  logger_log("Server initialized.");
+  printf("[SERVER] Server ruleaza pe port %d...\n", port);
+  logger_log("Server initializat.");
 
   while (1) {
     if (soap_accept(&soap) < 0)

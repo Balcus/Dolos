@@ -10,12 +10,12 @@ void config_load(const char *path, ClientConfig *cfg) {
   config_t lib_cfg;
   config_init(&lib_cfg);
 
-  /* defaults */
+  // port si host default
   cfg->port = 8080;
   strcpy(cfg->host, "localhost");
 
   if (!config_read_file(&lib_cfg, path)) {
-    fprintf(stderr, "[CONFIG] %s:%d - %s, using defaults\n",
+    fprintf(stderr, "Eroare la configurare %s:%d - %s, folosim valorile default\n",
             config_error_file(&lib_cfg), config_error_line(&lib_cfg),
             config_error_text(&lib_cfg));
     config_destroy(&lib_cfg);
@@ -40,7 +40,7 @@ void client_call_hello(const char *name, const char *endpoint) {
 
   if (soap_call_ns__hello(&soap, endpoint, NULL, (char *)name, &result) ==
       SOAP_OK) {
-    printf("[CLIENT] Server response: %s\n", result);
+    printf("[CLIENT] Raspuns server: %s\n", result);
   } else {
     soap_print_fault(&soap, stderr);
   }
@@ -48,4 +48,10 @@ void client_call_hello(const char *name, const char *endpoint) {
   soap_destroy(&soap);
   soap_end(&soap);
   soap_done(&soap);
+}
+
+void client_send_files(const char **filepaths, int count, const ClientConfig *cfg) {
+  for (int i = 0; i < count; i++) {
+    printf("[CLIENT] Fisierul %s va fi trimis spre server\n", filepaths[i]);
+  }
 }
