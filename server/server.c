@@ -3,6 +3,7 @@
 #include "soapH.h"
 #include "soapStub.h"
 #include <libconfig.h>
+#include <libstemmer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +43,10 @@ int ns__hello(struct soap *soap, char *name, char **result) {
   char buf[BUFFER_SIZE];
   snprintf(buf, sizeof(buf), "ns__hello service called");
   logger_log(buf);
+
+  // test libstemmer
+  struct sb_stemmer *stm = sb_stemmer_new("english", "UTF_8");
+
   *result = (char *)soap_malloc(soap, BUFFER_SIZE);
   snprintf(*result, BUFFER_SIZE, "Hello %s", name);
   return SOAP_OK;

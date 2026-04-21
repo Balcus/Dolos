@@ -20,6 +20,7 @@ find_library(GSOAP_C_LIB
 
 set(SERVICE ${CMAKE_CURRENT_SOURCE_DIR}/services/service.h)
 set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
+set(STEMMER_O ${CMAKE_CURRENT_SOURCE_DIR}/libs/libstemmer.o)
 
 file(MAKE_DIRECTORY ${GEN_DIR})
 
@@ -57,11 +58,13 @@ target_link_libraries(server PRIVATE
     OpenSSL::Crypto
     ZLIB::ZLIB
     libconfig::libconfig
+    ${STEMMER_O}
 )
 target_include_directories(server PRIVATE
     ${GEN_DIR}
     server
     ${gsoap_INCLUDE_DIRS}
+    libs
 )
 add_dependencies(server gsoap_gen_target)
 
