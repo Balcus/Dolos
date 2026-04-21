@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 void start_server(int port);
+void start_file_server(int port);
 
 // logging
 void logger_init();

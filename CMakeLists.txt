@@ -55,6 +55,7 @@ target_link_libraries(server PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
     ZLIB::ZLIB
+    pthread
 )
 target_include_directories(server PRIVATE 
     ${GEN_DIR} 
