@@ -13,6 +13,8 @@ void config_load(const char *path, ClientConfig *cfg) {
   config_init(&lib_cfg);
 
   // setam valorile implicite pentru port si host
+
+  // port si host default
   cfg->port = 8080;
   strcpy(cfg->host, "localhost");
 

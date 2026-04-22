@@ -56,6 +56,8 @@ int ns__hello(struct soap *soap, char *name, char **result) {
   logger_log(buf);
 
   // cream un stemmer de test pentru limba engleza (demo libstemmer)
+
+  // test libstemmer
   struct sb_stemmer *stm = sb_stemmer_new("english", "UTF_8");
 
   // alocam memorie pentru raspuns si construim mesajul de salut
