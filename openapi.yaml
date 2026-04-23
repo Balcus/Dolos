@@ -1,0 +1,313 @@
+openapi: "3.0.3"
+info:
+  title: "Dolos Plagiarism Detection -- SOAP API (gSOAP mapping)"
+  version: "1.0.0"
+  description: |
+    Documenteaza operatiile SOAP expuse de serverul gSOAP al
+    proiectului Dolos. Fiecare path reprezinta o actiune SOAP,
+    nu o resursa REST. Request/response descriu continutul
+    SOAP envelope.
+    Namespace: ns  (definit in services/service.h)
+    Protocol: SOAP 1.1, stil RPC, encoding: encoded
+    WSDL namespace: http://example.com/service.wsdl
+    Schema namespace: urn:service
+
+servers:
+  - url: "http://{host}:{port}"
+    description: "Endpoint gSOAP server (din client.cfg)"
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8080"
+
+paths:
+
+  # ========== HELLO ==========
+  /soap#ns__hello:
+    post:
+      operationId: ns__hello
+      summary: "Test de conectivitate client-server"
+      description: |
+        Operatie SOAP: ns__hello(char *name, char **result)
+        Clientul trimite un nume, serverul raspunde cu un
+        mesaj de salut. Folosita pentru verificarea end-to-end
+        a protocolului SOAP.
+        Implementare: server/server.c  ->  ns__hello()
+        Apel client:  soap_call_ns__hello()
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              $ref: "#/components/schemas/HelloRequest"
+            example:
+              name: "William"
+      responses:
+        "200":
+          description: "SOAP_OK -- salut returnat"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/HelloResponse"
+              example:
+                result: "Hello William"
+        "500":
+          description: "SOAP Fault (eroare interna)"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SoapFault"
+
+  # ========== REGISTER ==========
+  /soap#ns__register:
+    post:
+      operationId: ns__register
+      summary: "Inregistrare utilizator nou"
+      description: |
+        Operatie SOAP: ns__register(char *username,
+                       char *password, int *result)
+        Creeaza un cont nou pe server. Returneaza cod de
+        succes/eroare.
+        Implementare: server/server.c  ->  ns__register()
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              username: "student1"
+              password: "parola123"
+      responses:
+        "200":
+          description: "SOAP_OK -- rezultat inregistrare"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+              example:
+                result: 0
+        "500":
+          description: "SOAP Fault (utilizator duplicat, eroare BD)"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SoapFault"
+
+  # ========== LOGIN ==========
+  /soap#ns__login:
+    post:
+      operationId: ns__login
+      summary: "Autentificare utilizator"
+      description: |
+        Operatie SOAP: ns__login(char *username,
+                       char *password, char **token)
+        Autentifica utilizatorul si returneaza un token de
+        sesiune necesar pentru operatiile ulterioare.
+        Implementare: server/server.c  ->  ns__login()
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              username: "student1"
+              password: "parola123"
+      responses:
+        "200":
+          description: "SOAP_OK -- token returnat"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+              example:
+                token: "token"
+        "500":
+          description: "SOAP Fault (credentiale invalide)"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SoapFault"
+
+  # ========== SUBMIT FILES (planificat) ==========
+  /soap#ns__submit_files:
+    post:
+      operationId: ns__submit_files
+      summary: "Trimitere fisiere pentru analiza plagiat"
+      description: |
+        Operatie SOAP planificata:
+        ns__submit_files(char *token,
+                         struct ArrayOfFile *files,
+                         int *job_id)
+        Trimite unul sau mai multe fisiere catre server.
+        Clientul specifica fisierele cu flag-ul -f.
+        STATUS: stub -- client_send_files() afiseaza doar
+        numele fisierelor; transferul efectiv e planificat.
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              $ref: "#/components/schemas/SubmitFilesRequest"
+            example:
+              token: "token"
+              files:
+                - filename: "tema1.c"
+                  content_base64: "I2luY2x1ZGUg..."
+                - filename: "tema2.c"
+                  content_base64: "I2luY2x1ZGUg..."
+      responses:
+        "200":
+          description: "SOAP_OK -- job_id returnat"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SubmitFilesResponse"
+              example:
+                job_id: 42
+        "500":
+          description: "SOAP Fault"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SoapFault"
+
+  # ========== GET REPORT (planificat) ==========
+  /soap#ns__get_report:
+    post:
+      operationId: ns__get_report
+      summary: "Obtinere raport plagiat"
+      description: |
+        Operatie SOAP planificata:
+        ns__get_report(int job_id, char **report)
+        Returneaza raportul de similaritate pentru un job
+        trimis anterior. Similar cu output-ul MOSS.
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              $ref: "#/components/schemas/GetReportRequest"
+            example:
+              job_id: 42
+      responses:
+        "200":
+          description: "SOAP_OK -- raport returnat"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/GetReportResponse"
+        "500":
+          description: "SOAP Fault (job inexistent)"
+          content:
+            text/xml:
+              schema:
+                $ref: "#/components/schemas/SoapFault"
+
+components:
+  schemas:
+
+    HelloRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: "Numele trimis de client"
+          example: "William"
+
+    HelloResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          description: "Mesaj de salut returnat"
+          example: "Hello William"
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          maxLength: 64
+        password:
+          type: string
+          maxLength: 128
+
+    RegisterResponse:
+      type: object
+      properties:
+        result:
+          type: integer
+          description: "0=succes, -1=duplicat, -2=eroare"
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: "Token de sesiune"
+
+    SubmitFilesRequest:
+      type: object
+      required: [token, files]
+      properties:
+        token:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileEntry"
+
+    FileEntry:
+      type: object
+      properties:
+        filename:
+          type: string
+        content_base64:
+          type: string
+          format: byte
+          description: "Continut fisier codificat base64"
+
+    SubmitFilesResponse:
+      type: object
+      properties:
+        job_id:
+          type: integer
+
+    GetReportRequest:
+      type: object
+      required: [job_id]
+      properties:
+        job_id:
+          type: integer
+
+    GetReportResponse:
+      type: object
+      properties:
+        report:
+          type: string
+          description: "Raport similaritate (text/HTML)"
+
+    SoapFault:
+      type: object
+      properties:
+        faultcode:
+          type: string
+        faultstring:
+          type: string
+        detail:
+          type: string
+
