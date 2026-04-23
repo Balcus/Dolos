@@ -16,12 +16,14 @@ void config_load(const char *path, ClientConfig *cfg) {
 
   // port si host default
   cfg->port = 8080;
-  strcpy(cfg->host, "localhost");
+  strncpy(cfg->host, "localhost", sizeof(cfg->host) - 1);
+  cfg->host[sizeof(cfg->host) - 1] = '\0';
 
   // incercam sa citim fisierul de configurare
   // daca nu reusim, afisam eroare si pastram valorile default
   if (!config_read_file(&lib_cfg, path)) {
-    fprintf(stderr, "Eroare la configurare %s:%d - %s, folosim valorile default\n",
+    fprintf(stderr,
+            "Eroare la configurare %s:%d - %s, folosim valorile default\n",
             config_error_file(&lib_cfg), config_error_line(&lib_cfg),
             config_error_text(&lib_cfg));
     config_destroy(&lib_cfg);
@@ -29,14 +31,17 @@ void config_load(const char *path, ClientConfig *cfg) {
   }
 
   // citim portul din configurare, daca exista
-  int port;
-  if (config_lookup_int(&lib_cfg, "port", &port))
+  int port = 0;
+  if (config_lookup_int(&lib_cfg, "port", &port)) {
     cfg->port = port;
+  }
 
   // citim adresa host-ului din configurare, daca exista
-  const char *host;
-  if (config_lookup_string(&lib_cfg, "host", &host))
+  const char *host = NULL;
+  if (config_lookup_string(&lib_cfg, "host", &host)) {
     strncpy(cfg->host, host, sizeof(cfg->host) - 1);
+    cfg->host[sizeof(cfg->host) - 1] = '\0';
+  }
 
   // eliberam resursele libconfig
   config_destroy(&lib_cfg);
@@ -50,8 +55,7 @@ void client_call_hello(const char *name, const char *endpoint) {
   char *result = NULL;
 
   // trimitem cererea soap hello si asteptam raspunsul
-  if (soap_call_ns__hello(&soap, endpoint, NULL, (char *)name, &result) ==
-      SOAP_OK) {
+  if (soap_call_ns__hello(&soap, endpoint, NULL, name, &result) == SOAP_OK) {
     printf("[CLIENT] Raspuns server: %s\n", result);
   } else {
     // daca a aparut o eroare, o afisam
@@ -65,7 +69,8 @@ void client_call_hello(const char *name, const char *endpoint) {
 }
 
 // functia care trimite fisierele specificate catre server
-void client_send_files(const char **filepaths, int count, const ClientConfig *cfg) {
+void client_send_files(const char **filepaths, int count,
+                       const ClientConfig *cfg) {
   // parcurgem lista de fisiere si afisam fiecare fisier care va fi trimis
   for (int i = 0; i < count; i++) {
     printf("[CLIENT] Fisierul %s va fi trimis spre server\n", filepaths[i]);
