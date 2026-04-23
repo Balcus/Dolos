@@ -9,11 +9,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 1024
 
-// descriptorul de fisier global pentru scrierea in pipe-ul de logging
-int log_fd = -1;
+// descriptorul de fisier static pentru scrierea in pipe-ul de logging
+static int log_fd = -1;
 
 // functia care incarca configuratia serverului dintr-un fisier cfg
 void config_load(const char *path, ServerConfig *cfg) {
@@ -22,12 +24,14 @@ void config_load(const char *path, ServerConfig *cfg) {
 
   // setam valorile implicite pentru port si directorul de loguri
   cfg->port = 8080;
-  strcpy(cfg->log_dir, "logs");
+  strncpy(cfg->log_dir, "logs", sizeof(cfg->log_dir) - 1);
+  cfg->log_dir[sizeof(cfg->log_dir) - 1] = '\0';
 
   // incercam sa citim fisierul de configurare
   // daca nu reusim, afisam eroare si pastram valorile default
   if (!config_read_file(&lib_cfg, path)) {
-    fprintf(stderr, "Eroare la configurare %s:%d - %s, folosim valorile default\n",
+    fprintf(stderr,
+            "Eroare la configurare %s:%d - %s, folosim valorile default\n",
             config_error_file(&lib_cfg), config_error_line(&lib_cfg),
             config_error_text(&lib_cfg));
     config_destroy(&lib_cfg);
@@ -35,14 +39,17 @@ void config_load(const char *path, ServerConfig *cfg) {
   }
 
   // citim portul din configurare, daca exista
-  int port;
-  if (config_lookup_int(&lib_cfg, "port", &port))
+  int port = 0;
+  if (config_lookup_int(&lib_cfg, "port", &port)) {
     cfg->port = port;
+  }
 
   // citim directorul de loguri din configurare, daca exista
-  const char *log_dir;
-  if (config_lookup_string(&lib_cfg, "log_dir", &log_dir))
+  const char *log_dir = NULL;
+  if (config_lookup_string(&lib_cfg, "log_dir", &log_dir)) {
     strncpy(cfg->log_dir, log_dir, sizeof(cfg->log_dir) - 1);
+    cfg->log_dir[sizeof(cfg->log_dir) - 1] = '\0';
+  }
 
   // eliberam resursele libconfig
   config_destroy(&lib_cfg);
@@ -59,6 +66,9 @@ int ns__hello(struct soap *soap, char *name, char **result) {
 
   // test libstemmer
   struct sb_stemmer *stm = sb_stemmer_new("english", "UTF_8");
+  if (stm != NULL) {
+    sb_stemmer_delete(stm);
+  }
 
   // alocam memorie pentru raspuns si construim mesajul de salut
   *result = (char *)soap_malloc(soap, BUFFER_SIZE);
@@ -74,6 +84,10 @@ int ns__register(struct soap *soap, char *username, char *password,
   snprintf(buf, sizeof(buf), "User inregistrat: %s", username);
   logger_log(buf);
 
+  // marcam parametrii nefolositi explicit pentru a evita warninguri
+  (void)soap;
+  (void)password;
+
   // returnam cod de succes (0 = totul a mers bine)
   *result = 0;
   return SOAP_OK;
@@ -86,9 +100,13 @@ int ns__login(struct soap *soap, char *username, char *password, char **token) {
   snprintf(buf, sizeof(buf), "User logat %s", username);
   logger_log(buf);
 
+  // marcam parametrul nefolosit explicit
+  (void)password;
+
   // alocam memorie si returnam un token de sesiune
-  *token = soap_malloc(soap, BUFFER_SIZE);
-  strcpy(*token, "token");
+  *token = (char *)soap_malloc(soap, BUFFER_SIZE);
+  strncpy(*token, "token", BUFFER_SIZE - 1);
+  (*token)[BUFFER_SIZE - 1] = '\0';
   return SOAP_OK;
 }
 
@@ -100,11 +118,19 @@ void logger_init(const char *log_dir) {
 
   // cream un pipe pentru comunicarea intre procesul principal si cel de logging
   int pipe_fds[2];
-  if (pipe(pipe_fds) < 0)
+  if (pipe(pipe_fds) < 0) {
     return;
+  }
 
   // facem fork: procesul copil va scrie in fisierul de log
-  if (fork() == 0) {
+  pid_t pid = fork();
+  if (pid < 0) {
+    close(pipe_fds[0]);
+    close(pipe_fds[1]);
+    return;
+  }
+
+  if (pid == 0) {
     // procesul copil: inchidem capatul de scriere, nu avem nevoie de el
     close(pipe_fds[1]);
 
@@ -119,12 +145,14 @@ void logger_init(const char *log_dir) {
 
     // deschidem fisierul de log pentru scriere
     FILE *f = fopen(filename, "w");
-    if (!f)
-      exit(1);
+    if (f == NULL) {
+      close(pipe_fds[0]);
+      _exit(1);
+    }
 
     // citim in bucla din pipe si scriem in fisierul de log
     char buffer[BUFFER_SIZE];
-    ssize_t n;
+    ssize_t n = 0;
     while ((n = read(pipe_fds[0], buffer, sizeof(buffer) - 1)) > 0) {
       buffer[n] = '\0';
       fprintf(f, "%s\n", buffer);
@@ -134,7 +162,7 @@ void logger_init(const char *log_dir) {
     // inchidem fisierul si capatul de citire, apoi iesim din procesul copil
     fclose(f);
     close(pipe_fds[0]);
-    exit(0);
+    _exit(0);
   }
 
   // procesul parinte: inchidem capatul de citire si salvam cel de scriere
@@ -145,8 +173,9 @@ void logger_init(const char *log_dir) {
 // scrie un mesaj in log cu timestamp-ul curent
 void logger_log(const char *msg) {
   // daca pipe-ul nu e initializat, nu facem nimic
-  if (log_fd < 0)
+  if (log_fd < 0) {
     return;
+  }
 
   // generam timestamp-ul curent
   char timestamp[BUFFER_SIZE];
@@ -155,9 +184,12 @@ void logger_log(const char *msg) {
   strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", tm_info);
 
   // formatam mesajul final cu timestamp si il scriem in pipe
-  char final_buf[1024];
+  char final_buf[BUFFER_SIZE];
   int len = snprintf(final_buf, sizeof(final_buf), "[%s] %s", timestamp, msg);
-  write(log_fd, final_buf, len);
+  if (len > 0) {
+    ssize_t written = write(log_fd, final_buf, (size_t)len);
+    (void)written;
+  }
 }
 
 // functia principala care porneste serverul soap
@@ -182,8 +214,9 @@ void start_server(int port, const char *log_dir) {
   // bucla principala: asteptam conexiuni si procesam cererile soap
   while (1) {
     // acceptam o conexiune noua de la un client
-    if (soap_accept(&soap) < 0)
+    if (soap_accept(&soap) < 0) {
       break;
+    }
     // procesam cererea soap primita
     soap_serve(&soap);
     // eliberam resursele alocate pentru cererea curenta
