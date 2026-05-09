@@ -18,6 +18,13 @@ find_library(GSOAP_C_LIB
     REQUIRED
 )
 
+find_path(GSOAP_IMPORT_DIR
+    NAMES xsd.h
+    HINTS
+        ${gsoap_INCLUDE_DIRS}/../bin/import
+    REQUIRED
+)
+
 set(SERVICE ${CMAKE_CURRENT_SOURCE_DIR}/services/service.h)
 set(GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 set(STEMMER_O ${CMAKE_CURRENT_SOURCE_DIR}/libs/libstemmer.o)
@@ -31,8 +38,8 @@ add_custom_command(
     ${GEN_DIR}/soapClient.c
     ${GEN_DIR}/soapStub.h
     ${GEN_DIR}/soapH.h
-    ${GEN_DIR}/service.nsmap
-    COMMAND ${GSOAP_CPP2} -c -d ${GEN_DIR} ${SERVICE}
+    ${GEN_DIR}/ns.nsmap
+    COMMAND ${GSOAP_CPP2} -c -d ${GEN_DIR} -I${GSOAP_IMPORT_DIR} ${SERVICE}
     DEPENDS ${SERVICE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     VERBATIM
@@ -59,6 +66,7 @@ target_link_libraries(server PRIVATE
     ZLIB::ZLIB
     libconfig::libconfig
     ${STEMMER_O}
+    pthread
 )
 target_include_directories(server PRIVATE
     ${GEN_DIR}

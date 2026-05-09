@@ -1,15 +1,16 @@
-// includerea headerului clientului si a bibliotecilor necesare
 #include "client.h"
+#include "ns.nsmap"
 #include <argtable2.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(int argc, char *argv[]) {
   // incarcam configuratia clientului din fisierul cfg
+  // config_load construieste si endpoint-ul global
   ClientConfig cfg;
   config_load("config/client.cfg", &cfg);
 
-  // construim adresa endpoint-ului serverului (http://host:port)
+  // construim adresa endpoint-ului serverului
   char endpoint[512];
   snprintf(endpoint, sizeof(endpoint), "http://%s:%d", cfg.host, cfg.port);
 
@@ -33,12 +34,11 @@ int main(int argc, char *argv[]) {
 
   // daca utilizatorul a cerut ajutor, afisam modul de utilizare
   if (help->count > 0) {
-    printf("Usage: client [OPTIONS] <file>...\n\n");
+    printf("Usage: client [OPTIONS]\n\n");
     printf("Options:\n");
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     printf("\nExamples:\n");
     printf("  client -f file1.txt -f file2.txt   Trimite fisiere la server\n");
-    printf("  client                              Apel hello implicit\n");
     arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
     return 0;
   }
@@ -52,12 +52,12 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // daca au fost specificate fisiere, le trimitem la server
-  // altfel, facem un apel hello de test
+  // daca au fost specificate fisiere, le trimitem la server pentru analiza
   if (files->count > 0) {
-    client_send_files(files->filename, files->count, &cfg);
+    client_send_files(files->filename, files->count, endpoint);
   } else {
-    client_call_hello("William", endpoint);
+    printf("Folositi -f pentru a specifica fisierele de analizat.\n");
+    printf("Folositi -h pentru ajutor.\n");
   }
 
   // eliberam memoria alocata pentru tabelul de argumente
