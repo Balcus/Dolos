@@ -4,13 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BUFFER_SIZE 1024
+
 int main(int argc, char *argv[]) {
   // incarcam configuratia clientului din fisierul cfg
   ClientConfig cfg;
   config_load("config/client.cfg", &cfg);
 
   // construim adresa endpoint-ului serverului (http://host:port)
-  char endpoint[512];
+  char endpoint[BUFFER_SIZE];
   snprintf(endpoint, sizeof(endpoint), "http://%s:%d", cfg.host, cfg.port);
 
   // definim argumentele acceptate din linia de comanda
@@ -55,7 +57,7 @@ int main(int argc, char *argv[]) {
   // daca au fost specificate fisiere, le trimitem la server
   // altfel, facem un apel hello de test
   if (files->count > 0) {
-    client_send_files(files->filename, files->count, &cfg);
+    client_send_files(files->filename, files->count, endpoint);
   } else {
     client_call_hello("William", endpoint);
   }

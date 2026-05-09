@@ -110,6 +110,12 @@ int ns__login(struct soap *soap, char *username, char *password, char **token) {
   return SOAP_OK;
 }
 
+int ns__uploadFile(struct soap *soap, char *filename, struct xsd__base64Binary fileData, int *result) {
+    printf("[SERVER] Fisier primit: %s (%d bytes)\n", filename, fileData.__size);
+    *result = 0;
+    return SOAP_OK;
+}
+
 // initializeaza sistemul de logging folosind fork si pipe
 // creeaza un proces copil dedicat scrierii in fisierul de log
 void logger_init(const char *log_dir) {

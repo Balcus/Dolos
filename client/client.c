@@ -1,7 +1,7 @@
 // includerea headerului clientului si a bibliotecilor necesare
 #include "client.h"
-#include "service.nsmap"
 #include "soapH.h"
+#include "service.nsmap"
 #include <libconfig.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,10 +69,53 @@ void client_call_hello(const char *name, const char *endpoint) {
 }
 
 // functia care trimite fisierele specificate catre server
-void client_send_files(const char **filepaths, int count,
-                       const ClientConfig *cfg) {
-  // parcurgem lista de fisiere si afisam fiecare fisier care va fi trimis
-  for (int i = 0; i < count; i++) {
-    printf("[CLIENT] Fisierul %s va fi trimis spre server\n", filepaths[i]);
-  }
+void client_send_files(const char **filepaths, int count, const char* endpoint) {
+    for (int i = 0; i < count; i++) {
+        // open and read file
+        FILE *f = fopen(filepaths[i], "rb");
+        if (!f) {
+            fprintf(stderr, "[CLIENT] Nu pot deschide fisierul: %s\n", filepaths[i]);
+            continue;
+        }
+        fseek(f, 0, SEEK_END);
+        long size = ftell(f);
+        rewind(f);
+
+        unsigned char *buf = malloc(size);
+        if (!buf) {
+            fprintf(stderr, "[CLIENT] Memorie insuficienta pentru: %s\n", filepaths[i]);
+            fclose(f);
+            continue;
+        }
+        fread(buf, 1, size, f);
+        fclose(f);
+
+        // build xsd__base64Binary
+        struct xsd__base64Binary fileData;
+        fileData.__ptr  = buf;
+        fileData.__size = (int)size;
+        fileData.id      = NULL;
+        fileData.type    = NULL;
+        fileData.options = NULL;
+
+        // extract just the filename (basename)
+        const char *name = strrchr(filepaths[i], '/');
+        name = name ? name + 1 : filepaths[i];
+
+        struct soap soap;
+        soap_init(&soap);
+        int result = 0;
+
+        if (soap_call_ns__uploadFile(&soap, endpoint, NULL, (char *)name, fileData, &result) == SOAP_OK) {
+            printf("[CLIENT] Fisier trimis: %s (result=%d)\n", name, result);
+        } else {
+            fprintf(stderr, "[CLIENT] Eroare la trimiterea fisierului: %s\n", name);
+            soap_print_fault(&soap, stderr);
+        }
+
+        soap_destroy(&soap);
+        soap_end(&soap);
+        soap_done(&soap);
+        free(buf);
+    }
 }

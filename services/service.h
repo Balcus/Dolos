@@ -1,3 +1,13 @@
+//gsoap xsd schema namespace: http://www.w3.org/2001/XMLSchema
+
+struct xsd__base64Binary {
+    unsigned char *__ptr;
+    int __size;
+    char *id;
+    char *type;
+    char *options;
+};
+
 //gsoap ns service name: service
 //gsoap ns service protocol: SOAP
 //gsoap ns service style: rpc
@@ -13,3 +23,10 @@ int ns__register(char* username, char *password, int* result);
 
 //gsoap ns service method: Login for the user
 int ns__login(char* username, char *password, char** token);
+
+//gsoap ns service method: Uploads a file to the server
+int ns__uploadFile(
+    char *filename,
+    struct xsd__base64Binary fileData,
+    int *result
+);
