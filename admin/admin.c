@@ -9,8 +9,13 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(__GNUC__)
+extern void _nc_leaks_tinfo(void) __attribute__((weak));
+#endif
+
 int admin_init(AdminClient *client) {
   memset(client, 0, sizeof(*client));
+  client->shm_fd = -1;
   client->selected = 0;
 
   // deschidem segmentul de memorie partajata creat de server
@@ -34,7 +39,17 @@ int admin_init(AdminClient *client) {
     return -1;
   }
 
-  initscr();
+  client->screen = newterm(NULL, stdout, stdin);
+  if (!client->screen) {
+    fprintf(stderr, "Eroare: nu s-a putut initializa terminalul ncurses.\n");
+    munmap(client->state, sizeof(AdminState));
+    close(client->shm_fd);
+    client->state = NULL;
+    client->shm_fd = -1;
+    return -1;
+  }
+
+  set_term(client->screen);
   cbreak();
   noecho();
   keypad(stdscr, TRUE);
@@ -372,7 +387,15 @@ int admin_handle_input(AdminClient *client, int ch) {
 }
 
 void admin_cleanup(AdminClient *client) {
-  endwin();
+  if (client->screen) {
+    endwin();
+    delscreen(client->screen);
+    client->screen = NULL;
+  }
+#if defined(__GNUC__)
+  if (_nc_leaks_tinfo)
+    _nc_leaks_tinfo();
+#endif
   if (client->state && client->state != MAP_FAILED)
     munmap(client->state, sizeof(AdminState));
   if (client->shm_fd >= 0)

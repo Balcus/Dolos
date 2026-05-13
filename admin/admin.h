@@ -26,6 +26,7 @@
 // structura care retine starea locala a admin clientului
 typedef struct {
   AdminState *state;       // pointer catre memoria partajata
+  SCREEN *screen;          // sesiunea ncurses curenta
   int shm_fd;              // file descriptor al segmentului shm
   int selected;            // indicele controlului selectat curent
   char log_lines[16][128]; // ultimele mesaje de log local
